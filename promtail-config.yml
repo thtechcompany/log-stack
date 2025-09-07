@@ -1,0 +1,41 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki_dev:3100/loki/api/v1/push
+  - url: http://loki_test:3100/loki/api/v1/push
+  - url: http://loki_staging:3100/loki/api/v1/push
+  - url: http://loki_prod:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: dev_app
+    static_configs: 
+      - targets: [localhost]
+        labels:
+          job: nodejs_dev
+          __path__: /var/log/dev/app.log
+
+  - job_name: test_app
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nodejs_test
+          __path__: /var/log/test/app.log
+
+  - job_name: staging_app
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nodejs_staging
+          __path__: /var/log/staging/app.log
+
+  - job_name: prod_app
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nodejs_prod
+          __path__: /var/log/prod/app.log

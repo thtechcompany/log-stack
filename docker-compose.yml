@@ -1,0 +1,108 @@
+services:
+  loki_dev:
+    image: grafana/loki:2.9.2
+    container_name: loki_dev
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-dev-config.yml:/etc/loki/local-config.yaml
+      - loki_dev_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  loki_test:
+    image: grafana/loki:2.9.2
+    container_name: loki_test
+    ports:
+      - "3101:3100"
+    volumes:
+      - ./loki-test-config.yml:/etc/loki/local-config.yaml
+      - loki_test_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  loki_staging:
+    image: grafana/loki:2.9.2
+    container_name: loki_staging
+    ports:
+      - "3102:3100"
+    volumes:
+      - ./loki-staging-config.yml:/etc/loki/local-config.yaml
+      - loki_staging_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  loki_prod:
+    image: grafana/loki:2.9.2
+    container_name: loki_prod
+    ports:
+      - "3103:3100"
+    volumes:
+      - ./loki-prod-config.yml:/etc/loki/local-config.yaml
+      - loki_prod_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - ../01-backend/logs:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki_dev
+      - loki_test
+      - loki_staging
+      - loki_prod
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=supersecret
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki_dev
+      - loki_test
+      - loki_staging
+      - loki_prod
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  node_exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: node_exporter
+    ports:
+      - "9100:9100"
+
+  mongo_exporter_dev:
+    image: percona/mongodb_exporter:0.42.0
+    container_name: mongo_exporter_dev
+    ports:
+      - "9216:9216"
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_DEV_USER}:${MONGODB_DEV_PASSWORD}@${MONGODB_DEV_HOST}:${MONGODB_DEV_PORT}/admin
+    restart: unless-stopped
+
+  mongo_exporter_prod:
+    image: percona/mongodb_exporter:0.42.0
+    container_name: mongo_exporter_prod
+    ports:
+      - "9217:9216"
+    environment:
+      - MONGODB_URI=mongodb://${MONGODB_PROD_USER}:${MONGODB_PROD_PASSWORD}@${MONGODB_PROD_HOST}:${MONGODB_PROD_PORT}/admin
+    restart: unless-stopped
+
+volumes:
+  loki_dev_data:
+  loki_test_data:
+  loki_staging_data:
+  loki_prod_data:
+  grafana_data:
